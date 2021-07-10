@@ -1,0 +1,6 @@
+{
+    "type": "bugfix",
+    "category": "AWS SDK for Java v2",
+    "contributor": "Carey-AWS",
+    "description": "Update javadocs release cross-linking script"
+}

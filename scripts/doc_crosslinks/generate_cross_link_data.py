@@ -4,7 +4,8 @@ import io
 import codecs
 import json
 import re
-# import requests
+import pathlib
+from pathlib import Path
 from os import listdir
 from os.path import isdir, exists, join
 from re import split
@@ -14,22 +15,17 @@ clientClass = {}
 
 def generateDocsMap(apiDefinitionsPath, apiDefinitionsRelativeFilePath):
 
-    filesInDir = [f for f in listdir(apiDefinitionsPath) if isdir(join(apiDefinitionsPath, f))]
-    for file in filesInDir :
-        serviceJsonFileName = join(apiDefinitionsPath, join(file, apiDefinitionsRelativeFilePath))
-
-        if(exists(serviceJsonFileName)) :
-            with codecs.open(serviceJsonFileName, 'rb', 'utf-8') as api_definition:
-                api_content = json.loads(api_definition.read())
-                if "uid" in api_content["metadata"].keys():
-                    sdks[api_content["metadata"]["uid"]] = file
-                clientClass[api_content["metadata"]["uid"]] = getClientClassNameFromMetadata(api_content["metadata"])
-
-#                 # Below  code can be used for debugging  failing clients
-#                 str  = "https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/"+ file +"/"+getClientClassNameFromMetadata(api_content["metadata"])+".html"+"#validateTemplate--"
-#                 ret = requests.head(str)
-#                 if( ret.status_code != 200 ):
-#                     print(str)
+    root = pathlib.Path(r'./services')
+    for filepath in root.rglob('service-2.json'):
+        tmpArr = str(Path(filepath).parent).split("/")
+        getName = tmpArr[len(tmpArr)-1]
+        if (getName == "codegen-resources"):
+            getName = str(filepath).split("services/")[1].split("/src/main/resources")[0]
+        with codecs.open(filepath, 'rb', 'utf-8') as api_definition:
+            api_content = json.loads(api_definition.read())
+            if "uid" in api_content["metadata"].keys():
+                sdks[api_content["metadata"]["uid"]] = getName
+            clientClass[api_content["metadata"]["uid"]] = getClientClassNameFromMetadata(api_content["metadata"])
 
     return sdks
 
@@ -110,7 +106,7 @@ def Main():
     argMap = {}
     argMap[ "apiDefinitionsBasePath" ] = args[ "apiDefinitionsBasePath" ] or "./../services/"
     argMap[ "apiDefinitionsRelativeFilePath" ] = args[ "apiDefinitionsRelativeFilePath" ] or "/src/main/resources/codegen-resources/service-2.json"
-    argMap[ "templateFilePath" ] = args[ "templateFilePath" ] or "./scripts/crosslink_redirect.html"
+    argMap[ "templateFilePath" ] = args[ "templateFilePath" ] or "./scripts/doc_crosslinks/crosslink_redirect.html"
     argMap[ "outputFilePath" ] = args[ "outputFilePath" ] or "./crosslink_redirect.html"
     
     insertDocsMapToRedirect(argMap["apiDefinitionsBasePath"], argMap["apiDefinitionsRelativeFilePath"], argMap["templateFilePath"], argMap["outputFilePath"])
